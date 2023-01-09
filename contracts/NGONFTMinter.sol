@@ -4,16 +4,12 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "./NGONFTEnumerable.sol";
 
 /// @author Thibault.D
 /// @title NGO NFT Marketplace
 contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
-    using Counters for Counters.Counter;
-    using Strings for uint256;
-
      enum Step {
         Before,
         WhitelistSale,
@@ -22,6 +18,8 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
 
     mapping(address => uint256) amountNFTsPerWalletWhitelistSale;
 
+    bytes16 private constant _SYMBOLS = "0123456789abcdef";
+    address private constant _ENUMERABLE_ADDRESS = 0xfbffbb4F8fE002a4d430bB4e427305ce76103E6E;
     uint16 internal _maxSupply = 7777;
     uint16 internal _maxWhitelist = 2777;
     uint16 internal _maxPublic = 5000;
@@ -38,8 +36,6 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
 
     bytes32 private merkleRoot;
 
-    Counters.Counter internal _tokenIdCounter;
-
     constructor(string memory _name, string memory _symbol, bytes32 _merkleRoot, string memory _baseURI)
         ERC721(_name, _symbol) 
     {
@@ -53,7 +49,7 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
     }
 
     // Mint functions
-    function whitelistMint(address _account, bytes32[] calldata _proof) external payable callerIsUser {
+    function whitelistMint(address _account, bytes32[] calldata _proof, uint256 _desiredTokenId) external payable callerIsUser {
         uint256 price = wlSalePrice;
 
         require(price != 0, "price is 0");
@@ -66,39 +62,26 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
         require(amountNFTsPerWalletWhitelistSale[_account] + 1 <= 1, "You can only get 1 NFT on the Whitelist Sale");
         require(totalSupply() + 1 <= _maxWhitelist, "Max supply exceeded");
         require(msg.value >= price, "Not enough funds");
+        require(NGONFTEnumerable(_ENUMERABLE_ADDRESS).isTokenAvailable(toString(_desiredTokenId)), "Token ID does not exist or already bought!");
 
+        NGONFTEnumerable(_ENUMERABLE_ADDRESS).tokenIdBought(toString(_desiredTokenId));
         amountNFTsPerWalletWhitelistSale[_account] += 1;
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
-        tokenId = _tokenIdCounter.current();
-        _safeMint(_account, tokenId);
+        _safeMint(_account, _desiredTokenId);
     }
 
-    function publicSaleMint(address _account, uint256 _quantity) external payable callerIsUser {
+    function publicSaleMint(address _account, uint256 _desiredTokenId) external payable callerIsUser {
         uint256 price = publicSalePrice;
 
         require(price != 0, "price is 0");
         require(_account != address(0));
         require(sellingStep == Step.PublicSale, "Public sale is not activated");
-        require(totalSupply() + _quantity <= _maxWhitelist + _maxPublic, "Max supply exceeded");
-        require(msg.value >= price * _quantity, "not enough funds");
+        require(totalSupply() + 1 <= _maxWhitelist + _maxPublic, "Max supply exceeded");
+        require(msg.value >= price, "not enough funds");
+        require(NGONFTEnumerable(_ENUMERABLE_ADDRESS).isTokenAvailable(toString(_desiredTokenId)), "Token ID does not exist or already bought!");
 
-        for(uint8 i = 0; i < _quantity; i++) {
-            uint256 tokenId = _tokenIdCounter.current();
-            _tokenIdCounter.increment();
-            tokenId = _tokenIdCounter.current();
-            _safeMint(_account, tokenId);
-        }
-    }
-    
-    function pauseMint() external onlyOwner {
-        pauseTime = currentTime();
-    }
+        NGONFTEnumerable(_ENUMERABLE_ADDRESS).tokenIdBought(toString(_desiredTokenId));
 
-    function resumeMint() external onlyOwner {
-        uint difference = currentTime() - pauseTime;
-        saleStartTime = saleStartTime + difference;
-        pauseTime = 0;
+        _safeMint(_account, _desiredTokenId);
     }
 
     // Override
@@ -111,7 +94,7 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
     function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
         require(_exists(_tokenId), "URI query for nonexistent token");
 
-        return string(abi.encodePacked(baseURI, _tokenId.toString(), ".json"));
+        return string(abi.encodePacked(baseURI, toString(_tokenId), ".json"));
     }
 
     // Internal functions
@@ -121,8 +104,31 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
     function _isWhitelisted(address _account, bytes32[] calldata _proof) internal view returns (bool) {
         return MerkleProof.verify(_proof, merkleRoot, keccak256(abi.encodePacked((_account))));
     }
-    
     function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
         merkleRoot = _merkleRoot;
+    }
+    /**
+     * @dev Converts a `uint256` to its ASCII `string` decimal representation.
+     */
+    function toString(uint256 value) internal pure returns (string memory) {
+        unchecked {
+            uint256 length = Math.log10(value) + 1;
+            string memory buffer = new string(length);
+            uint256 ptr;
+            /// @solidity memory-safe-assembly
+            assembly {
+                ptr := add(buffer, add(32, length))
+            }
+            while (true) {
+                ptr--;
+                /// @solidity memory-safe-assembly
+                assembly {
+                    mstore8(ptr, byte(mod(value, 10), _SYMBOLS))
+                }
+                value /= 10;
+                if (value == 0) break;
+            }
+            return buffer;
+        }
     }
 }
