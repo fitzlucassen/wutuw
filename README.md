@@ -1,6 +1,8 @@
-# Sample Hardhat Project
+# Wutuw Project
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+This project aims to propose a simple NFT marketplace in which each token represents an NGO.
+By buying a NGO token, your funds goes directly to the NGO you chose.
+But to withdraw your funds, NGO has to provide proof of usage.
 
 Try running some of the following tasks:
 
