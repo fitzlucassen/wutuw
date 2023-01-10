@@ -19,7 +19,7 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
     mapping(address => uint256) amountNFTsPerWalletWhitelistSale;
 
     bytes16 private constant _SYMBOLS = "0123456789abcdef";
-    address private constant _ENUMERABLE_ADDRESS = 0xfbffbb4F8fE002a4d430bB4e427305ce76103E6E;
+    address private _enumerableAddress = 0xfbffbb4F8fE002a4d430bB4e427305ce76103E6E;
     uint16 internal _maxSupply = 7777;
     uint16 internal _maxWhitelist = 2777;
     uint16 internal _maxPublic = 5000;
@@ -62,9 +62,9 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
         require(amountNFTsPerWalletWhitelistSale[_account] + 1 <= 1, "You can only get 1 NFT on the Whitelist Sale");
         require(totalSupply() + 1 <= _maxWhitelist, "Max supply exceeded");
         require(msg.value >= price, "Not enough funds");
-        require(NGONFTEnumerable(_ENUMERABLE_ADDRESS).isTokenAvailable(toString(_desiredTokenId)), "Token ID does not exist or already bought!");
+        require(NGONFTEnumerable(_enumerableAddress).isTokenAvailable(toString(_desiredTokenId)), "Token ID does not exist or already bought!");
 
-        NGONFTEnumerable(_ENUMERABLE_ADDRESS).tokenIdBought(toString(_desiredTokenId));
+        NGONFTEnumerable(_enumerableAddress).tokenIdBought(toString(_desiredTokenId), msg.value);
         amountNFTsPerWalletWhitelistSale[_account] += 1;
         _safeMint(_account, _desiredTokenId);
     }
@@ -77,11 +77,20 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
         require(sellingStep == Step.PublicSale, "Public sale is not activated");
         require(totalSupply() + 1 <= _maxWhitelist + _maxPublic, "Max supply exceeded");
         require(msg.value >= price, "not enough funds");
-        require(NGONFTEnumerable(_ENUMERABLE_ADDRESS).isTokenAvailable(toString(_desiredTokenId)), "Token ID does not exist or already bought!");
+        require(NGONFTEnumerable(_enumerableAddress).isTokenAvailable(toString(_desiredTokenId)), "Token ID does not exist or already bought!");
 
-        NGONFTEnumerable(_ENUMERABLE_ADDRESS).tokenIdBought(toString(_desiredTokenId));
+        NGONFTEnumerable(_enumerableAddress).tokenIdBought(toString(_desiredTokenId), msg.value);
 
         _safeMint(_account, _desiredTokenId);
+    }
+
+    function withdrawFunds(string memory _reason) external payable {
+        require(NGONFTEnumerable(_enumerableAddress).isNgo(msg.sender), "only ngo can withdraw funds");
+        uint balance = NGONFTEnumerable(_enumerableAddress).getNgoBalance(msg.sender);
+        
+        payable(address(msg.sender)).transfer(balance);
+
+        NGONFTEnumerable(_enumerableAddress).setReasonToTokenId(msg.sender, _reason);
     }
 
     // Override
@@ -106,6 +115,12 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
     }
     function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
         merkleRoot = _merkleRoot;
+    }
+    function setEnumerableAddress(address a) external onlyOwner {
+        _enumerableAddress = a;
+    }
+    function getTokenWithdrawReason(string memory _tokenId) public view returns(string memory) {
+        return NGONFTEnumerable(_enumerableAddress).getTokenWithdrawReason(_tokenId);
     }
     /**
      * @dev Converts a `uint256` to its ASCII `string` decimal representation.

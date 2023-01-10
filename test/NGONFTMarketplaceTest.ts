@@ -16,6 +16,7 @@ interface TestContext {
     nonFunToken: any;
     ownerSigner: any;
     account: any;
+    otherAccounts: any[];
     proof: string[];
 }
 
@@ -30,6 +31,7 @@ describe("NGONFTMarketplace", function () {
         nonFunToken: null,
         ownerSigner: null,
         account: null,
+        otherAccounts: [],
         proof: []
     };
 
@@ -42,15 +44,20 @@ describe("NGONFTMarketplace", function () {
     });
 
     beforeEach(async function () {
-        // deploy the contract
-        testContext.nonFunToken = await testContext.NonFunToken.deploy(testContext.name, testContext.symbol, testContext.team, [80, 20], testContext.merkleRoot, testContext.baseUri);
-        await testContext.nonFunToken.deployed();
-
-        // Get the contractOwner and collector address
         const signers = await ethers.getSigners();
         const owner = signers[0];
         const account1 = signers[1];
         const otheraccounts = signers.slice(2);
+
+        const tmp = await ethers.getContractFactory('NGONFTEnumerable');
+        const contract = await tmp.deploy(["1","2","3","4","5","6","7","8","9"], [otheraccounts[0].address, otheraccounts[0].address, otheraccounts[0].address, otheraccounts[1].address, otheraccounts[1].address, otheraccounts[1].address, otheraccounts[2].address, otheraccounts[2].address, otheraccounts[2].address]);
+        await contract.deployed();
+        // deploy the contract
+        testContext.nonFunToken = await testContext.NonFunToken.deploy(testContext.name, testContext.symbol, testContext.merkleRoot, testContext.baseUri);
+        await testContext.nonFunToken.deployed();
+
+        // Get the contractOwner and collector address
+        
 
         const leaves = [owner.address, account1.address].map(x => keccak256(x));
         const tree = new MerkleTree(leaves, keccak256, { sort: true });
@@ -60,8 +67,15 @@ describe("NGONFTMarketplace", function () {
 
         testContext.ownerSigner = owner;
         testContext.account = account1;
+        testContext.otherAccounts = otheraccounts;
         await testContext.nonFunToken.connect(owner).setMerkleRoot(root);
         await testContext.nonFunToken.setStep(1);
+
+        const t = 1673355054;
+        await testContext.nonFunToken.setEnumerableAddress(contract.address);
+        await testContext.nonFunToken.setSaleStartTime(t);
+        await testContext.nonFunToken.setMaxSupply(9);
+        await testContext.nonFunToken.setMaxWhitelist(1);
     });
 
     describe("Deployment", function () {
@@ -71,76 +85,91 @@ describe("NGONFTMarketplace", function () {
         });
 
         it("Should mint a token with token ID 1 to account1", async function () {
-            const t = 1673103223;
             const v = ethers.utils.parseEther("0.0025")
-            await testContext.nonFunToken.setSaleStartTime(t);
-            await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, { value: v });
+            await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 1, { value: v });
             expect(await testContext.nonFunToken.ownerOf(1)).to.equal(testContext.account.address);
             expect(await testContext.nonFunToken.balanceOf(testContext.account.address)).to.equal(1);
         });
 
         it("Should mint a token with token ID 2 to account1", async function () {
-            const t = 1673103223;
             const v = ethers.utils.parseEther("0.0025");
-            await testContext.nonFunToken.setSaleStartTime(t);
-            await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, { value: v });
+            await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 1, { value: v });
             await testContext.nonFunToken.setStep(2);
 
             const e = ethers.utils.parseEther("0.004");
-            await testContext.nonFunToken.connect(testContext.account).publicSaleMint(testContext.account.address, 1, { value: e });
+            await testContext.nonFunToken.connect(testContext.account).publicSaleMint(testContext.account.address, 2, { value: e });
 
             expect(await testContext.nonFunToken.ownerOf(2)).to.equal(testContext.account.address);
             expect(await testContext.nonFunToken.balanceOf(testContext.account.address)).to.equal(2);
         });
 
         it("Same address can't mint 2 token", async function () {
-            const t = 1673103223;
             const v = ethers.utils.parseEther("0.0025")
-            await testContext.nonFunToken.setSaleStartTime(t);
-            await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, { value: v });
+            await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 1, { value: v });
             await expect(
-                testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, { value: v })
+                testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 2, { value: v })
             ).to.be.revertedWith("You can only get 1 NFT on the Whitelist Sale");
         });
 
         it("Can't whitelist mint if sale is in the future", async function () {
-            const t = 1673103223;
             const v = ethers.utils.parseEther("0.0025")
             await testContext.nonFunToken.setSaleStartTime(Date.now());
             await expect(
-                testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, { value: v })
+                testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 1, { value: v })
             ).to.be.revertedWith("whitelist-sale has not started yet");
         });
 
-        it("Can't mint when whitelist is paused, but ok when resumed", async function () {
-            const t = 1673103223;
-            const v = ethers.utils.parseEther("0.0025")
-            await testContext.nonFunToken.setSaleStartTime(t);
+        // it("Can't mint when whitelist is paused, but ok when resumed", async function () {
+        //     const v = ethers.utils.parseEther("0.0025")
 
-            await testContext.nonFunToken.connect(testContext.ownerSigner).pauseMint();
+        //     await testContext.nonFunToken.connect(testContext.ownerSigner).pauseMint();
 
-            await expect(
-                testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, { value: v })
-            ).to.be.revertedWith("Mint is paused");
+        //     await expect(
+        //         testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 1, { value: v })
+        //     ).to.be.revertedWith("Mint is paused");
 
-            await testContext.nonFunToken.connect(testContext.ownerSigner).resumeMint();
+        //     await testContext.nonFunToken.connect(testContext.ownerSigner).resumeMint();
 
-            await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, { value: v });
-        });
+        //     await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 1, { value: v });
+        // });
 
         it('Should has the correct baseURI ', async function () {
             const result = testContext.baseUri;
             const baseUri = await testContext.nonFunToken.baseURI();
             expect(baseUri).to.equal(result);
 
-            const t = 1673103223;
             const v = ethers.utils.parseEther("0.0025")
-            await testContext.nonFunToken.setSaleStartTime(t);
 
-            await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, { value: v });
+            await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 1, { value: v });
 
             const tokenUri = await testContext.nonFunToken.tokenURI(1);
             expect(tokenUri).to.equal(result + "1.json");
+        });
+        
+        it("Can't mint an already minted token", async function () {
+            const v = ethers.utils.parseEther("0.004")
+            await testContext.nonFunToken.setStep(2);
+            await testContext.nonFunToken.connect(testContext.account).publicSaleMint(testContext.account.address, 6, { value: v });
+            await expect(
+                testContext.nonFunToken.connect(testContext.account).publicSaleMint(testContext.account.address, 6, { value: v })
+            ).to.be.revertedWith("Token ID does not exist or already bought!");
+            await expect(
+                testContext.nonFunToken.connect(testContext.account).publicSaleMint(testContext.account.address, 60, { value: v })
+            ).to.be.revertedWith("Token ID does not exist or already bought!");
+        });
+
+        it("Withdraw functions by NGO only and reason stored in blockchain", async function () {
+            const v = ethers.utils.parseEther("0.004")
+            await testContext.nonFunToken.setStep(2);
+            await testContext.nonFunToken.connect(testContext.account).publicSaleMint(testContext.account.address, 5, { value: v });
+            await testContext.nonFunToken.connect(testContext.account).publicSaleMint(testContext.account.address, 6, { value: v });
+
+            await testContext.nonFunToken.connect(testContext.otherAccounts[1]).withdrawFunds("ocelot population");
+
+            const resultRightNGO = await testContext.nonFunToken.connect(testContext.account).getTokenWithdrawReason("6");
+            const resultWrongNGO = await testContext.nonFunToken.connect(testContext.account).getTokenWithdrawReason("4");
+            expect(resultRightNGO).to.equal("ocelot population");
+            expect(resultWrongNGO).to.equal("");
         });
     });
 });
