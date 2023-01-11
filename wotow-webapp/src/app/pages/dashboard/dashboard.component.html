@@ -1,0 +1,97 @@
+<app-header></app-header>
+
+<div class="wrapper">
+  <div class="page-header">
+    <img class="path" src="assets/img/blob.png" />
+
+    <img class="path2" src="assets/img/path2.png" />
+
+    <img class="shapes triangle" src="assets/img/triunghiuri.png" />
+
+    <img class="shapes wave" src="assets/img/waves.png" />
+
+    <img class="shapes squares" src="assets/img/patrat.png" />
+
+    <img class="shapes circle" src="assets/img/cercuri.png" />
+
+    <div class="content-center">
+      <div class="row row-grid justify-content-between align-items-center text-left">
+        <div class="col-lg-6 col-md-6">
+          <h1 class="text-white">
+            Welcome to<br />your dashboard!
+          </h1>
+          <h3>Here are the NGO NFT you own:</h3>
+        </div>
+      </div>
+      <div class="container">
+        <div class="row row-grid justify-content-between">
+          <div class="row">
+            <div class="col-lg-6 col-sm-12 px-2 py-2" *ngFor="let NFT of OwnedNFTs">
+              <div class="card card-stats" placement="bottom"
+              tooltip="{{ NFT.description }}">
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-5 col-md-12">
+                      <img style="min-height: auto; height: auto;max-height: 250px;" [src]="NFT.image" />
+                    </div>
+                    <div class="col-7 col-md-12">
+                      <div class="numbers">
+                        <p class="card-title">Token ID: {{ NFT.tokenId }}</p>
+                        <p></p>
+                        <p class="card-category">{{ NFT.title }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <section class="section section-lg section-coins">
+    <img class="path" src="assets/img/path3.png" />
+
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6">
+          <hr class="line-info" />
+
+          <h1>
+            Want to help more you world?<br />
+            <h3>Choose the NFT <span class="text-info"> that represents the NGO you wanna help </span></h3>
+          </h1>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-4" *ngFor="let NFT of OnlineNFTs" style="margin-top: 70px ">
+          <div class="card card-coin card-plain">
+            <div class="card-header">
+              <img class="img-center img-fluid" [src]="NFT.image"
+                style="height:200px !important; width: auto !important;" placement="bottom"
+                tooltip="{{ NFT.description }}">
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-12 text-center">
+                  <h4 class="text-uppercase">{{ NFT.title }}</h4>
+                  <span> Price </span>
+                  <hr class="line-primary" />
+                </div>
+              </div>
+              <div class="row">
+                <ul class="list-group">
+                  <li class="list-group-item">{{ NFT.price }} eth</li>
+                </ul>
+              </div>
+            </div>
+            <div class="card-footer text-center">
+              <button class="btn btn-primary btn-simple" (click)="mintNft(NFT.tokenId)">Buy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <app-footer></app-footer>

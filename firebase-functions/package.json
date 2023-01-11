@@ -1,0 +1,13 @@
+{
+  "name": "firebase-functions",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "thibault",
+  "license": "MIT",
+  "dependencies": {
+    "@metamask/eth-sig-util": "^5.0.2",
+    "cors": "^2.8.5",
+    "firebase-admin": "^11.4.1",
+    "firebase-functions": "^4.1.1"
+  }
+}
