@@ -76,4 +76,7 @@ contract NGONFTEnumerable {
     function getTokenNGOOwner(string memory _tokenId) public view returns(address) {
         return _nftTokenIdToNGOWallet[_tokenId];
     }
+    function getTokenNotMinted() public view returns(string[] memory) {
+        return _collectionTokenIds;
+    }
 }
