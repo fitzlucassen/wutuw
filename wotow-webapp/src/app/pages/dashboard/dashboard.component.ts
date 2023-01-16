@@ -23,6 +23,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const userAuth = this.authService.isConnected().then(async (o) => {
       if(o.isConnected)
         await this.contractService.mintNFT(o.address, tokenId, "0x3f1de37e9651d695bfdbc5da3c88b791cf4d466f4fcdd2b256dcc6c618ae63c5");
+        this.OwnedNFTs = await this.contractService.getBalance(o.address);
+        this.OnlineNFTs = await this.contractService.getAvailableNFTs(o.address);
     });
     
   }

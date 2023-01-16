@@ -4,17 +4,23 @@ pragma solidity 0.8.17;
 /// @author Thibault.D
 /// @title NGO NFT Marketplace
 contract NGONFTEnumerable {
-    string[] private _collectionTokenIds;
-    address[] private _ngoAddresses;
-    
-    mapping(string => bool) _tokenMinterOwner;
+    address private _nftMinterContract;
+    address private _owner;
 
-    // mapping pour lier les tokenId aux adresse des ongs
+    address[] private _ngoAddresses;
+    string[] private _collectionTokenIds;
+    
+    // allow to know which token has been already minted
+    mapping(string => bool) _tokenMinterOwner;
+    // mapping to link tokenIds to NGO addresses
     mapping(string => address) _nftTokenIdToNGOWallet;
+    // NGO ether balance thanks to funds
     mapping(address => uint) _ngoBalances;
+    // mapping between minted tokenId and the reason NGO will use funds
     mapping(string => string) _tokenIdWithdrawReason;
 
     constructor(string[] memory _tokenIds, address[] memory _tokenOwners) {
+        _owner = msg.sender;
         // list of token ids pre-minted
         _collectionTokenIds = _tokenIds;
         // list of ngo 
@@ -24,6 +30,19 @@ contract NGONFTEnumerable {
         for(uint16 i = 0; i < _collectionTokenIds.length; i++) {
             _nftTokenIdToNGOWallet[_collectionTokenIds[i]] = _tokenOwners[i];
         }
+    }
+
+    modifier isNftMinter(address caller) {
+        require(caller == _nftMinterContract);
+        _;
+    }
+    modifier isOwner(address caller) {
+        require(caller == _owner);
+        _;
+    }
+
+    function setNgoMinterAddress(address contractAddress) external isOwner(msg.sender) {
+        _nftMinterContract = contractAddress;
     }
 
     function isTokenAvailable(string memory _tokenId) public view returns(bool) {
@@ -40,13 +59,13 @@ contract NGONFTEnumerable {
         }
         return !idReserved && isInArray;
     }
-    function tokenIdBought(string memory _tokenId, uint _value) public {
+    function tokenIdBought(string memory _tokenId, uint _value) public isNftMinter(msg.sender) {
         // token id is bought by this minter
         _tokenMinterOwner[_tokenId] = true;
         // ngo balance increase
         _ngoBalances[_nftTokenIdToNGOWallet[_tokenId]] += _value;
     }
-    function setReasonToTokenId(address _ngoAddress, string memory reason) public {
+    function setReasonToTokenId(address _ngoAddress, string memory reason) public isNftMinter(msg.sender) {
         // for each token ids
         //      set the reason of withdraw, for the token id minted && owned by the same NGO
         for(uint16 cpt = 0; cpt < _collectionTokenIds.length; cpt++) {
