@@ -43,19 +43,20 @@ export class ContractService {
         const results = await this.alchemy.nft.getNftsForOwner(userAddress, {
             contractAddresses: [this._mintTokenContractAddress]
         });
-        const nfts = results.ownedNfts.map((element) => {
+        const nfts = await Promise.all(results.ownedNfts.map(async (element) => {
+            const reason = await this._tokenContract.methods.getTokenWithdrawReason(element.tokenId).call();
             let x: NGONFT = {
                 balance: element.balance,
                 description: element.description,
                 title: element.title,
                 tokenId: element.tokenId,
                 image: element.rawMetadata?.image,
-                reason: null,
+                reason: reason,
                 price: undefined
             };
 
             return x;
-        })
+        }));
 
         console.log(results);
         console.log(nfts);
@@ -72,7 +73,7 @@ export class ContractService {
         });
         tokenIds.forEach((element: any) => {
             const localToken = require('../../../../assets/json/' + element + '.json');
-            if(results.ownedNfts.findIndex(n => n.tokenId == element) < 0)
+            if(results.ownedNfts.findIndex(n => n.tokenId == element) < 0) {
                 nfts.push({
                     balance: 0,
                     description: localToken.description,
@@ -82,6 +83,7 @@ export class ContractService {
                     tokenId: element,
                     price: step == 1 ? 0.0025 : 0.004
                 });
+            }
         });
 
         return nfts;

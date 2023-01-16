@@ -42,6 +42,7 @@ contract NGONFTEnumerable {
     }
 
     function setNgoMinterAddress(address contractAddress) external isOwner(msg.sender) {
+        require(address(contractAddress) != address(0));
         _nftMinterContract = contractAddress;
     }
 

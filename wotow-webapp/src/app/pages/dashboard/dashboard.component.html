@@ -26,7 +26,7 @@
       <div class="container">
         <div class="row row-grid justify-content-between">
           <div class="row">
-            <div class="col-lg-6 col-sm-12 px-2 py-2" *ngFor="let NFT of OwnedNFTs">
+            <div class="col-lg-4 col-sm-12 px-2 py-2" *ngFor="let NFT of OwnedNFTs">
               <div class="card card-stats" placement="bottom"
               tooltip="{{ NFT.description }}">
                 <div class="card-body">
@@ -39,6 +39,8 @@
                         <p class="card-title">Token ID: {{ NFT.tokenId }}</p>
                         <p></p>
                         <p class="card-category">{{ NFT.title }}</p>
+                        <p class="card-category" *ngIf="!NFT.reason"><i style="font-size:12px">L'ONG n'a pas encore utilisé les fonds de votre don</i></p>
+                        <p class="card-category" *ngIf="NFT.reason" style="font-size:12px">{{ NFT.reason }}</p>
                       </div>
                     </div>
                   </div>

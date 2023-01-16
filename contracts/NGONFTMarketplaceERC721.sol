@@ -8,8 +8,8 @@ contract NGONFTMarketplaceERC721 is NGONFTMinter {
     // attribution du pourcentage pour chaque ong
     mapping(address => uint256) _ongPercentages;
 
-    constructor(string memory _name, string memory _symbol, bytes32 _merkleRoot, string memory _baseURI) 
-        NGONFTMinter(_name, _symbol, _merkleRoot, _baseURI) {
+    constructor(string memory _name_, string memory _symbol_, bytes32 _merkleRoot, string memory _baseURI_) 
+        NGONFTMinter(_name_, _symbol_, _merkleRoot, _baseURI_) {
     }
 
     // Setters
