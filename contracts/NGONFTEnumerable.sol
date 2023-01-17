@@ -32,16 +32,16 @@ contract NGONFTEnumerable {
         }
     }
 
-    modifier isNftMinter(address caller) {
-        require(caller == _nftMinterContract);
+    modifier isNftMinter() {
+        require(msg.sender == _nftMinterContract);
         _;
     }
-    modifier isOwner(address caller) {
-        require(caller == _owner);
+    modifier isOwner() {
+        require(msg.sender == _owner);
         _;
     }
 
-    function setNgoMinterAddress(address contractAddress) external isOwner(msg.sender) {
+    function setNgoMinterAddress(address contractAddress) external isOwner {
         require(address(contractAddress) != address(0));
         _nftMinterContract = contractAddress;
     }
@@ -60,13 +60,13 @@ contract NGONFTEnumerable {
         }
         return !idReserved && isInArray;
     }
-    function tokenIdBought(string memory _tokenId, uint _value) public isNftMinter(msg.sender) {
+    function tokenIdBought(string memory _tokenId, uint _value) public isNftMinter {
         // token id is bought by this minter
         _tokenMinterOwner[_tokenId] = true;
         // ngo balance increase
         _ngoBalances[_nftTokenIdToNGOWallet[_tokenId]] += _value;
     }
-    function setReasonToTokenId(address _ngoAddress, string memory reason) public isNftMinter(msg.sender) {
+    function setReasonToTokenId(address _ngoAddress, string memory reason) public isNftMinter {
         // for each token ids
         //      set the reason of withdraw, for the token id minted && owned by the same NGO
         for(uint16 cpt = 0; cpt < _collectionTokenIds.length; cpt++) {
@@ -87,6 +87,11 @@ contract NGONFTEnumerable {
     }
 
     // Getters
+    function getNgoBalanceThenReset(address _ngo) public isNftMinter returns(uint) {
+        uint balance = getNgoBalance(_ngo);
+        _ngoBalances[_ngo] = 0;
+        return balance;
+    }
     function getNgoBalance(address _ngo) public view returns(uint) {
         return _ngoBalances[_ngo];
     }

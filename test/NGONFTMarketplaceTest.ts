@@ -57,8 +57,6 @@ describe("NGONFTMarketplace", function () {
         await testContext.nonFunToken.deployed();
 
         // Get the contractOwner and collector address
-        
-
         const leaves = [owner.address, account1.address].map(x => keccak256(x));
         const tree = new MerkleTree(leaves, keccak256, { sort: true });
         const root = tree.getHexRoot();
@@ -68,14 +66,15 @@ describe("NGONFTMarketplace", function () {
         testContext.ownerSigner = owner;
         testContext.account = account1;
         testContext.otherAccounts = otheraccounts;
-        await testContext.nonFunToken.connect(owner).setMerkleRoot(root);
-        await testContext.nonFunToken.setStep(1);
+        await testContext.nonFunToken.setMerkleRoot(root);
 
-        const t = 1673355054;
+        const t = 1673945147;
         await testContext.nonFunToken.setEnumerableAddress(contract.address);
         await testContext.nonFunToken.setSaleStartTime(t);
         await testContext.nonFunToken.setMaxSupply(9);
         await testContext.nonFunToken.setMaxWhitelist(1);
+        await testContext.nonFunToken.setStep(1);
+        await contract.setNgoMinterAddress(testContext.nonFunToken.address);
     });
 
     describe("Deployment", function () {
@@ -103,7 +102,7 @@ describe("NGONFTMarketplace", function () {
             expect(await testContext.nonFunToken.balanceOf(testContext.account.address)).to.equal(2);
         });
 
-        it("Same address can't mint 2 token", async function () {
+        it("Same address can't mint 2 token in whitelist sale", async function () {
             const v = ethers.utils.parseEther("0.0025")
             await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 1, { value: v });
             await expect(
@@ -146,7 +145,7 @@ describe("NGONFTMarketplace", function () {
             expect(tokenUri).to.equal(result + "1.json");
         });
         
-        it("Can't mint an already minted token", async function () {
+        it("Can't mint an already minted token or a token that does not exist", async function () {
             const v = ethers.utils.parseEther("0.004")
             await testContext.nonFunToken.setStep(2);
             await testContext.nonFunToken.connect(testContext.account).publicSaleMint(testContext.account.address, 6, { value: v });
@@ -170,6 +169,10 @@ describe("NGONFTMarketplace", function () {
             const resultWrongNGO = await testContext.nonFunToken.connect(testContext.account).getTokenWithdrawReason("4");
             expect(resultRightNGO).to.equal("ocelot population");
             expect(resultWrongNGO).to.equal("");
+
+            await expect(
+                testContext.nonFunToken.connect(testContext.account).withdrawFunds("test withdraw")
+            ).to.be.revertedWith("only ngo can withdraw funds");
         });
     });
 });

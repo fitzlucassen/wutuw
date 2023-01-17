@@ -17,7 +17,7 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
     }
 
     mapping(address => uint256) amountNFTsPerWalletWhitelistSale;
-    mapping(uint256 => bool) NFTMinted;
+    mapping(uint256 => uint8) NFTMinted;
 
     uint16 internal _maxSupply = 7777;
     uint16 internal _maxWhitelist = 2777;
@@ -69,9 +69,9 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
         require(totalSupply() + 1 <= _maxWhitelist, "Max supply exceeded");
         require(msg.value >= price, "Not enough funds");
         require(NGONFTEnumerable(_enumerableAddress).isTokenAvailable(toString(_desiredTokenId)), "Token ID does not exist or already bought!");
-        require(!NFTMinted[_desiredTokenId]);
+        require(NFTMinted[_desiredTokenId] == 0, "desired token id is already minted");
 
-        NFTMinted[_desiredTokenId] = true;
+        NFTMinted[_desiredTokenId] = 1;
         NGONFTEnumerable(_enumerableAddress).tokenIdBought(toString(_desiredTokenId), msg.value);
         amountNFTsPerWalletWhitelistSale[_account] += 1;
         _safeMint(_account, _desiredTokenId);
@@ -86,15 +86,15 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
         require(totalSupply() + 1 <= _maxWhitelist + _maxPublic, "Max supply exceeded");
         require(msg.value >= price, "not enough funds");
         require(NGONFTEnumerable(_enumerableAddress).isTokenAvailable(toString(_desiredTokenId)), "Token ID does not exist or already bought!");
-        require(!NFTMinted[_desiredTokenId]);
+        require(NFTMinted[_desiredTokenId] == 0, "desired token id is already minted");
 
-        NFTMinted[_desiredTokenId] = true;
+        NFTMinted[_desiredTokenId] = 1;
         NGONFTEnumerable(_enumerableAddress).tokenIdBought(toString(_desiredTokenId), msg.value);
         _safeMint(_account, _desiredTokenId);
     }
 
     function withdrawFunds(string memory _reason) external payable callerIsNgo {
-        uint balance = NGONFTEnumerable(_enumerableAddress).getNgoBalance(msg.sender);
+        uint balance = NGONFTEnumerable(_enumerableAddress).getNgoBalanceThenReset(msg.sender);
         
         payable(address(msg.sender)).transfer(balance);
 
