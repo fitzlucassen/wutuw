@@ -68,7 +68,7 @@ describe("NGONFTMarketplace", function () {
         testContext.otherAccounts = otheraccounts;
         await testContext.nonFunToken.setMerkleRoot(root);
 
-        const t = 1673945147;
+        const t = 1674047720;
         await testContext.nonFunToken.setEnumerableAddress(contract.address);
         await testContext.nonFunToken.setSaleStartTime(t);
         await testContext.nonFunToken.setMaxSupply(9);
@@ -118,19 +118,19 @@ describe("NGONFTMarketplace", function () {
             ).to.be.revertedWith("whitelist-sale has not started yet");
         });
 
-        // it("Can't mint when whitelist is paused, but ok when resumed", async function () {
-        //     const v = ethers.utils.parseEther("0.0025")
+        it("Can't mint when whitelist is paused, but ok when resumed", async function () {
+            const v = ethers.utils.parseEther("0.0025")
 
-        //     await testContext.nonFunToken.connect(testContext.ownerSigner).pauseMint();
+            await testContext.nonFunToken.connect(testContext.ownerSigner).pauseMint();
 
-        //     await expect(
-        //         testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 1, { value: v })
-        //     ).to.be.revertedWith("Mint is paused");
+            await expect(
+                testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 1, { value: v })
+            ).to.be.revertedWith("Mint is paused");
 
-        //     await testContext.nonFunToken.connect(testContext.ownerSigner).resumeMint();
+            await testContext.nonFunToken.connect(testContext.ownerSigner).resumeMint();
 
-        //     await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 1, { value: v });
-        // });
+            await testContext.nonFunToken.connect(testContext.account).whitelistMint(testContext.account.address, testContext.proof, 1, { value: v });
+        });
 
         it('Should has the correct baseURI ', async function () {
             const result = testContext.baseUri;

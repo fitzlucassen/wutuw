@@ -101,6 +101,16 @@ contract NGONFTMinter is Ownable, ERC721, ERC721Enumerable {
         NGONFTEnumerable(_enumerableAddress).setReasonToTokenId(msg.sender, _reason);
     }
 
+    function pauseMint() external onlyOwner {
+        pauseTime = currentTime();
+    }
+
+    function resumeMint() external onlyOwner {
+        uint difference = currentTime() - pauseTime;
+        saleStartTime = saleStartTime + difference;
+        pauseTime = 0;
+    }
+
     // Override
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize) internal override(ERC721, ERC721Enumerable) {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
